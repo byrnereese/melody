@@ -45,9 +45,6 @@ sub core_backup_instructions {
         'placement'     => {
             'order' => 510
         },
-        'trackback'     => {
-            'order' => 510
-        },
         'objecttag'     => {
             'order' => 510
         },
@@ -57,19 +54,6 @@ sub core_backup_instructions {
         'objectasset'   => {
             'order' => 510
         },
-        # Ping should be backed up after Trackback.
-        'tbping'        => {
-            'order' => 520
-        },
-        'ping'          =>  {
-            'order' => 520
-        },
-        'ping_cat'      => {
-            'order' => 520
-        },
-        # Comment should be backed up after TBPing
-        # because saving a comment ultimately triggers
-        # MT::TBPing::save.
         'comment'        => {
             'order' => 530
         },
@@ -1209,16 +1193,6 @@ sub parents {
     };
 }
 
-package MT::TBPing;
-
-sub parents {
-    my $obj = shift;
-    {
-        blog_id => MT->model('blog'),
-        tb_id => MT->model('trackback'),
-    };
-}
-
 package MT::Template;
 
 sub parents {
@@ -1236,46 +1210,6 @@ sub parents {
         blog_id => MT->model('blog'),
         template_id  => MT->model('template')
     };
-}
-
-package MT::Trackback;
-
-sub restore_parent_ids {
-    my $obj = shift;
-    my ($data, $objects) = @_;
-
-    my $result = 0;
-    my $blog_class = MT->model('blog');
-    my $new_blog = $objects->{$blog_class . '#' . $data->{blog_id}};
-    if ($new_blog) {
-        $data->{blog_id} = $new_blog->id;
-    } else {
-        return 0;
-    }                            
-    if (my $cid = $data->{category_id}) {
-        my $cat_class = MT->model('category');
-        my $new_obj = $objects->{$cat_class . '#' . $cid};
-        unless ($new_obj) {
-            $cat_class = MT->model('folder');
-            $new_obj = $objects->{$cat_class . '#' . $cid};
-        }
-        if ($new_obj) {
-            $data->{category_id} = $new_obj->id;
-            $result = 1;
-        }
-    } elsif (my $eid = $data->{entry_id}) {
-        my $entry_class = MT->model('entry');
-        my $new_obj = $objects->{$entry_class . '#' . $eid};
-        unless ($new_obj) {
-            $entry_class = MT->model('page');
-            $new_obj = $objects->{$entry_class . '#' . $eid};
-        }
-        if ($new_obj) {
-            $data->{entry_id} = $new_obj->id;
-            $result = 1;
-        }
-    }
-    $result;
 }
 
 package MT::ObjectAsset;

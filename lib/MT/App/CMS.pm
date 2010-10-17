@@ -56,7 +56,6 @@ sub core_methods {
         'edit_widget' => "${pkg}Template::edit_widget",
 
         ## Listing methods
-        'list_ping'     => "${pkg}TrackBack::list",
         'list_entry'    => "${pkg}Entry::list",
         'list_template' => "${pkg}Template::list",
         'list_widget'   => "${pkg}Template::list_widget",
@@ -108,7 +107,6 @@ sub core_methods {
         'handle_junk'    => "${pkg}Comment::handle_junk",
         'not_junk'       => "${pkg}Comment::not_junk",
 
-        'ping'               => "${pkg}Entry::send_pings",
         'rebuild_phase'      => "${pkg}Blog::rebuild_phase",
         'rebuild'            => "${pkg}Blog::rebuild_pages",
         'rebuild_new_phase'  => "${pkg}Blog::rebuild_new_phase",
@@ -150,7 +148,6 @@ sub core_methods {
         'start_export'         => "${pkg}Export::start_export",
         'export'               => "${pkg}Export::export",
         'import'               => "${pkg}Import::do_import",
-        'pinged_urls'          => "${pkg}Entry::pinged_urls",
         'save_entry_prefs'     => "${pkg}Entry::save_entry_prefs",
         'save_favorite_blogs'  => "${pkg}Blog::save_favorite_blogs",
         'folder_add'           => "${pkg}Category::category_add",
@@ -240,7 +237,6 @@ sub core_methods {
         'js_recent_entries_for_tag' => "${pkg}Tag::js_recent_entries_for_tag",
 
         ## DEPRECATED ##
-        'list_pings'    => "${pkg}TrackBack::list",
         'list_entries'  => "${pkg}Entry::list",
         'list_pages'    => "${pkg}Page::list",
         'list_comments' => "${pkg}Comment::list",
@@ -533,14 +529,6 @@ sub core_list_actions {
                 input       => 1,
                 input_label => 'Tags to remove from selected assets',
                 permission  => 'edit_assets',
-            },
-        },
-        'ping' => {
-            'unapprove_ping' => {
-                label      => "Unpublish TrackBack(s)",
-                order      => 100,
-                code       => "${pkg}Comment::unapprove_item",
-                permission => 'edit_all_posts,manage_feedback,publish_post',
             },
         },
         'comment' => {
@@ -851,79 +839,6 @@ sub core_list_filters {
                     $to .= '235959';
                     $terms->{authored_on} = [ $from, $to ];
                     $args->{range_incl}{authored_on} = 1;
-                },
-            },
-        },
-        ping => {
-            default => {
-                label   => 'Non-spam TrackBacks',
-                order   => 100,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    require MT::TBPing;
-                    $terms->{junk_status} = MT::TBPing::NOT_JUNK();
-                },
-            },
-            my_posts => {
-                label   => 'TrackBacks on my entries',
-                order   => 200,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    require MT::Entry;
-                    my $app = MT->instance;
-                    require MT::TBPing;
-                    require MT::Trackback;
-                    $terms->{junk_status} = MT::TBPing::NOT_JUNK();
-                    $args->{join}         = MT::Trackback->join_on(
-                        undef,
-                        { id => \'= tbping_tb_id', },
-                        {   join => MT::Entry->join_on(
-                                undef,
-                                {   id        => \'= trackback_entry_id',
-                                    author_id => $app->user->id
-                                }
-                            )
-                        },
-                    );
-                },
-            },
-            published => {
-                label   => 'Published TrackBacks',
-                order   => 200,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    $terms->{visible} = 1;
-                },
-            },
-            unpublished => {
-                label   => 'Unpublished TrackBacks',
-                order   => 300,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    require MT::TBPing;
-                    $terms->{junk_status} = MT::TBPing::NOT_JUNK();
-                    $terms->{visible}     = 0;
-                },
-            },
-            spam => {
-                label   => 'TrackBacks marked as Spam',
-                order   => 400,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    require MT::TBPing;
-                    $terms->{junk_status} = MT::TBPing::JUNK();
-                },
-            },
-            last_7_days => {
-                label   => 'All TrackBacks in the last 7 days',
-                order   => 700,
-                handler => sub {
-                    my ( $terms, $args ) = @_;
-                    my $ts = time - 7 * 24 * 60 * 60;
-                    $ts = epoch2ts( MT->app->blog, $ts );
-                    $terms->{created_on} = [ $ts, undef ];
-                    $args->{range_incl}{created_on} = 1;
-                    $terms->{junk_status} = MT::TBPing::NOT_JUNK();
                 },
             },
         },
@@ -1329,12 +1244,6 @@ sub core_menus {
             order      => 4000,
             permission => 'manage_pages',
         },
-        'manage:ping' => {
-            label      => "TrackBacks",
-            mode       => 'list_pings',
-            order      => 5000,
-            permission => 'create_post,edit_all_posts,manage_feedback',
-        },
         'manage:category' => {
             label      => "Categories",
             mode       => 'list_cat',
@@ -1643,21 +1552,6 @@ sub init_core_callbacks {
             $pkg . 'pre_save.page'    => "${pfx}Page::pre_save",
             $pkg . 'post_save.page'   => "${pfx}Page::post_save",
             $pkg . 'post_delete.page' => "${pfx}Page::post_delete",
-
-            # ping callbacks
-            $pkg . 'edit.ping' => "${pfx}TrackBack::edit",
-            $pkg
-                . 'view_permission_filter.ping' =>
-                "${pfx}TrackBack::can_view",
-            $pkg
-                . 'save_permission_filter.ping' =>
-                "${pfx}TrackBack::can_save",
-            $pkg
-                . 'delete_permission_filter.ping' =>
-                "${pfx}TrackBack::can_delete",
-            $pkg . 'pre_save.ping'    => "${pfx}TrackBack::pre_save",
-            $pkg . 'post_save.ping'   => "${pfx}TrackBack::post_save",
-            $pkg . 'post_delete.ping' => "${pfx}TrackBack::post_delete",
 
             # template callbacks
             $pkg . 'edit.template' => "${pfx}Template::edit",
@@ -2064,7 +1958,7 @@ sub build_menus {
             )
         {
             my $allowed = 0;
-            my @p = split /,/, $p;
+            my @p = split(/,/, $p);
             foreach my $p (@p) {
                 my $perm = 'can_' . $p;
                 $allowed = 1, last if ( $perms && $perms->$perm() ) || $admin;
@@ -2846,7 +2740,7 @@ sub _entry_prefs_from_params {
         $prefs .= ':' . $fields{$_} if $fields{$_} > 1;
     }
     if ( $type && lc $type eq 'custom' ) {
-        my @fields = split /,/, $q->param('custom_prefs');
+        my @fields = split(/,/, $q->param('custom_prefs'));
         foreach (@fields) {
             $prefs .= ',' if $prefs ne '';
             $prefs .= $_;

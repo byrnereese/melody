@@ -33,27 +33,19 @@ __PACKAGE__->install_properties({
         'server_offset' => 'float',
         'convert_paras' => 'string(30)',
         'convert_paras_comments' => 'string(30)',
-        'allow_pings_default' => 'boolean',
         'status_default' => 'smallint',
         'allow_anon_comments' => 'boolean',
         'words_in_excerpt' => 'smallint',
         'moderate_unreg_comments' => 'boolean',
-        'moderate_pings' => 'boolean',
         'allow_unreg_comments' => 'boolean',
         'allow_reg_comments' => 'boolean',
-        'allow_pings' => 'boolean',
         'manual_approve_commenters' => 'boolean',
         'require_comment_emails' => 'boolean',
         'junk_folder_expiry' => 'integer',
-        'ping_weblogs' => 'boolean',
         'mt_update_key' => 'string(30)',
         'language' => 'string(5)',
         'welcome_msg' => 'text',
         'google_api_key' => 'string(32)',
-        'email_new_pings' => 'boolean',
-        'ping_blogs' => 'boolean',
-        'ping_google' => 'boolean',
-        'ping_others' => 'text',
         'autodiscover_links' => 'boolean',
         'sanitize_spec' => 'string(255)',
         'cc_license' => 'string(255)',
@@ -88,7 +80,6 @@ __PACKAGE__->install_properties({
         'require_typekey_emails' => 'integer meta',
         'nofollow_urls' => 'integer meta',
         'follow_auth_links' => 'integer meta',
-        'update_pings' => 'string meta',
         'captcha_provider' => 'string meta',
         'publish_queue' => 'integer meta',
         'nwc_smart_replace' => 'integer meta',
@@ -109,7 +100,7 @@ __PACKAGE__->install_properties({
     child_classes => ['MT::Entry', 'MT::Page', 'MT::Template', 'MT::Asset',
                       'MT::Category', 'MT::Folder', 'MT::Notification', 'MT::Log',
                       'MT::ObjectTag', 'MT::Association', 'MT::Comment',
-                      'MT::TBPing', 'MT::Trackback', 'MT::TemplateMap',
+                      'MT::TemplateMap',
                       'MT::Touch'],
     datasource => 'blog',
     primary_key => 'id',
@@ -167,24 +158,17 @@ sub set_defaults {
         convert_paras => $default_text_format,
         allow_unreg_comments => 0,
         allow_reg_comments => 1,
-        allow_pings => 1,
         moderate_unreg_comments => MT::Blog::MODERATE_UNTRSTD(),
-        moderate_pings => 1,
         require_comment_emails => 1,
         allow_comments_default => 1,
         allow_comment_html => 1,
         autolink_urls => 1, 
-        allow_pings_default => 1,
         require_comment_emails => 0,
         convert_paras_comments => 1,
-        email_new_pings => 1,
         email_new_comments => 1,
         allow_commenter_regist => 1,
         use_comment_confirmation => 1,
         sanitize_spec => 0,
-        ping_weblogs => 0,
-        ping_blogs => 0,
-        ping_google => 0,
         archive_type => '',
         archive_type_preferred => '',
         status_default => 2,
@@ -385,14 +369,6 @@ sub email_all_comments {
 
 sub email_attn_reqd_comments {
     return $_[0]->email_new_comments == 2;
-}
-
-sub email_all_pings {
-    return $_[0]->email_new_pings == 1;
-}
-
-sub email_attn_reqd_pings {
-    return $_[0]->email_new_pings == 2;
 }
 
 sub MODERATE_NONE ()    { 0 }
@@ -660,8 +636,8 @@ sub clone_with_children {
     # specified and the flag is '1', clone it. if a class is specified
     # but the flag is '0', skip it.
 
-    # MT::Entry -> MT::Category, MT::Comment, MT::Tracback, MT::TBPing
-    # MT::Page -> MT::Folder, MT::Comment, MT::Trackback, MT::TBPing
+    # MT::Entry -> MT::Category, MT::Comment
+    # MT::Page -> MT::Folder, MT::Comment
 
     if ((!exists $classes->{'MT::Entry'}) || $classes->{'MT::Entry'}) {
         # Cloning ENTRY records
@@ -825,100 +801,6 @@ sub clone_with_children {
             }
         }
         $callback->($state . " " . MT->translate("[_1] records processed.", $counter), 'cats');
-    }
-
-    if ((!exists $classes->{'MT::Trackback'}) || $classes->{'MT::Trackback'}) {
-        my $state = MT->translate("Cloning TrackBacks for blog...");
-        $callback->($state, "tbs");
-        require MT::Trackback;
-        $iter = MT::Trackback->load_iter({ blog_id => $old_blog_id });
-        $counter = 0;
-        while (my $tb = $iter->()) {
-            next unless ($tb->entry_id && $entry_map{$tb->entry_id}) ||
-                ($tb->category_id && $cat_map{$tb->category_id});
-
-            $callback->($state . " " . MT->translate("[_1] records processed...", $counter), 'tbs')
-                if $counter && ($counter % 100 == 0);
-            $counter++;
-            my $tb_id = $tb->id;
-            my $new_tb = $tb->clone();
-            delete $new_tb->{column_values}->{id};
-            delete $new_tb->{changed_cols}->{id};
-
-            if ($tb->category_id) {
-                if (my $cid = $cat_map{$tb->category_id}) {
-                    my $cat_tb = MT::Trackback->load(
-                        { category_id => $cid }
-                    );
-                    if ($cat_tb) {
-                        my $changed;
-                        if ($tb->passphrase) {
-                            $cat_tb->passphrase($tb->passphrase);
-                            $changed = 1;
-                        }
-                        if ($tb->is_disabled) {
-                            $cat_tb->is_disabled(1);
-                            $changed = 1;
-                        }
-                        $cat_tb->save if $changed;
-                        $tb_map{$tb_id} = $cat_tb->id;
-                        next;
-                    }
-                }
-            }
-            elsif ($tb->entry_id) {
-                if (my $eid = $entry_map{$tb->entry_id}) {
-                    my $entry_tb = MT::Entry->load($eid)->trackback;
-                    if ($entry_tb) {
-                        my $changed;
-                        if ($tb->passphrase) {
-                            $entry_tb->passphrase($tb->passphrase);
-                            $changed = 1;
-                        }
-                        if ($tb->is_disabled) {
-                            $entry_tb->is_disabled(1);
-                            $changed = 1;
-                        }
-                        $entry_tb->save if $changed;
-                        $tb_map{$tb_id} = $entry_tb->id;
-                        next;
-                    }
-                }
-            }
-
-            # A trackback wasn't created when saving the entry/category,
-            # (perhaps trackbacks are now disabled for the entry/category?)
-            # so create one now
-            $new_tb->entry_id($entry_map{$tb->entry_id})
-                if $tb->entry_id && $entry_map{$tb->entry_id};
-            $new_tb->category_id($cat_map{$tb->category_id})
-                if $tb->category_id && $cat_map{$tb->category_id};
-            $new_tb->blog_id($new_blog_id);
-            $new_tb->save or die $new_tb->errstr;
-            $tb_map{$tb_id} = $new_tb->id;
-        }
-        $callback->($state . " " . MT->translate("[_1] records processed.", $counter), 'tbs');
-
-        if ((!exists $classes->{'MT::TBPing'}) || $classes->{'MT::TBPing'}) {
-            my $state = MT->translate("Cloning TrackBack pings for blog...");
-            $callback->($state, "pings");
-            require MT::TBPing;
-            $iter = MT::TBPing->load_iter({ blog_id => $old_blog_id });
-            $counter = 0;
-            while (my $ping = $iter->()) {
-                next unless $tb_map{$ping->tb_id};
-                $callback->($state . " " . MT->translate("[_1] records processed...", $counter), 'pings')
-                    if $counter && ($counter % 100 == 0);
-                $counter++;
-                my $new_ping = $ping->clone();
-                delete $new_ping->{column_values}->{id};
-                delete $new_ping->{changed_cols}->{id};
-                $new_ping->tb_id($tb_map{$ping->tb_id});
-                $new_ping->blog_id($new_blog_id);
-                $new_ping->save or die $new_ping->errstr;
-            }
-            $callback->($state . " " . MT->translate("[_1] records processed.", $counter), 'pings');
-        }
     }
 
     if ((!exists $classes->{'MT::Template'}) || $classes->{'MT::Template'}) {

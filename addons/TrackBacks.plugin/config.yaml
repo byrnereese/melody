@@ -1,0 +1,156 @@
+id: TrackBacks
+key: TrackBacks
+name: 'TrackBacks'
+description: 'This plugin provides TrackBacks support for Melody.'
+
+object_types:
+  trackback: 'MT::Trackback'
+  tbping: 'MT::TBPing'
+  ping: 'MT::TBPing'
+  ping_cat: 'MT::TBPing'
+  log.ping: 'MT::Log::TBPing'
+  entry:
+    to_ping_urls: 'text'
+    pinged_urls: 'text'
+    ping_count: 'integer'
+# TODO: move these to CA: options
+  blog:
+    allow_pings_default: 'boolean'
+    moderate_pings: 'boolean'
+    ping_weblogs: 'boolean'
+    email_new_pings: 'boolean'
+    ping_blogs: 'boolean'
+    ping_google: 'boolean'
+    ping_others: 'text'
+    update_pings: 'string meta'
+  category:
+    ping_urls: 'text'
+        
+config_settings:
+  TrackbackScript: 
+    default: 'mt-tb.cgi'
+  GenerateTrackBackRSS:
+    default: 0
+  OutboundTrackbackLimit:
+    default: 'any'
+  OutboundTrackbackDomains:
+    type: 'ARRAY'
+  WeblogsPingURL:
+    default: 'http://rpc.weblogs.com/RPC2'
+  BlogsPingURL:
+    default: 'http://ping.blo.gs/'
+  MTPingURL:
+    default: 'http://www.movabletype.org/update/'
+  GooglePingURL:
+    default: 'http://blogsearch.google.com/ping/RPC2'
+  PingTimeout:
+    default: 60
+  PingInterface:
+    default: ''
+  PingProxy:
+    default: undef
+  PingNoProxy:
+    default: 'localhost'
+  OneHourMaxPings:
+    default: 10
+  OneDayMaxPings:
+    default: 50
+  AllowPings:
+    default: 1
+  DisableNotificationPings:
+    default: 0
+
+ping_servers:
+  weblogs:
+    label: 'weblogs.com'
+    url: 'http://rpc.weblogs.com/RPC2'
+  google:
+    label: 'google.com'
+    url: 'http://blogsearch.google.com/ping/RPC2'
+
+applications:
+  wizard: '$TrackBacks::TrackBacks::Plugin::load_wizard_app'
+  cms:
+    methods:
+      list_ping: '$TrackBacks::MT::CMS::TrackBack::list'
+      list_pings: '$TrackBacks::MT::CMS::TrackBack::list'
+      ping: "${pkg}Entry::send_pings"
+      pinged_urls: "${pkg}Entry::pinged_urls"
+    list_actions:
+       ping:
+         unapprove_ping:
+           label: "Unpublish TrackBack(s)"
+           order: 100
+           code: "${pkg}Comment::unapprove_item"
+           permission: 'edit_all_posts,manage_feedback,publish_post'
+    list_filters: '$TrackBacks::TrackBacks::Plugin::load_list_filters'
+    menus:
+      manage:ping:
+        label: "TrackBacks"
+        mode: 'list_pings'
+        order: 5000
+        permission: 'create_post,edit_all_posts,manage_feedback'
+
+  tb:
+    handler: 'MT::App::Trackback'
+
+backup_instructions: '$TrackBacks::TrackBacks::Plugin::load_backup_instructions'
+
+callbacks:
+  MT::CMS::TrackBack::edit.ping: $TrackBacks::TrackBacks::Callbacks::edit
+  MT::CMS::TrackBack::view_permission_filter.ping: $TrackBacks::TrackBacks::Callbacks::can_view
+  MT::CMS::TrackBack::save_permission_filter.ping: $TrackBacks::TrackBacks::Callbacks::can_save
+  MT::CMS::TrackBack::delete_permission_filter.ping: $TrackBacks::TrackBacks::Callbacks::can_delete
+  MT::CMS::TrackBack::pre_save.ping: $TrackBacks::TrackBacks::Callbacks::pre_save
+  MT::CMS::TrackBack::post_save.ping: $TrackBacks::TrackBacks::Callbacks::post_save
+  MT::CMS::TrackBack::post_delete.ping: $TrackBacks::TrackBacks::Callbacks::post_delete
+  ActivityFeed.ping: $TrackBacks::TrackBacks::Callbacks::feed_ping
+  MT::Blog::post_clone: $TrackBacks::TrackBacks::Callbacks::post_clone_blog
+  MT::Category::post_save: $TrackBacks::TrackBacks::Callbacks::post_save_category
+  MT::App::CMS::template_source.edit_category: $TrackBacks::TrackBacks::Callbacks::edit_category_source
+  MT::App::CMS::template_param.edit_category: $TrackBacks::TrackBacks::Callbacks::edit_category_param
+
+tags:
+  function:
+    TrackbackScript: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_trackback_script'
+    EntryTrackbackCount: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_entry_ping_count'
+    EntryTrackbackLink: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_entry_tb_link'
+    EntryTrackbackData: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_entry_tb_data'
+    EntryTrackbackID: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_entry_tb_id'
+    CategoryTrackbackLink: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_category_tb_link'
+    CategoryTrackbackCount: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_category_tb_count'
+    BlogPingCount: '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_blog_ping_count'
+    PingsSentURL => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_pings_sent_url'
+    PingTitle => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_title'
+    PingID => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_id'
+    PingURL => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_url'
+    PingExcerpt => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_excerpt'
+    PingBlogName => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_blog_name'
+    PingIP => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_ip'
+    PingDate => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_date'
+    PingScore => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_score'
+    PingScoreHigh => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_score_high'
+    PingScoreLow => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_score_low'
+    PingScoreAvg => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_score_avg'
+    PingScoreCount => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_score_count'
+    PingRank => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_rank'
+
+  block:
+    PingsHeader => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_pass_tokens'
+    PingsFooter => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_pass_tokens'
+    'CategoryIfAllowPings?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_category_allow_pings'
+    Pings => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_pings'
+    PingsSent => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_pings_sent'
+    PingEntry => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_ping_entry'
+    'IfPingsAllowed?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_if_pings_allowed'
+    'IfPingsAccepted?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_if_pings_accepted'
+    'IfPingsActive?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_if_pings_active'
+    'IfPingsModerated?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_if_pings_moderated'
+    'EntryIfAllowPings?' => '$TrackBacks::TrackBacks::ContextHandlers::_hdlr_entry_if_allow_pings'
+
+
+
+
+  
+
+

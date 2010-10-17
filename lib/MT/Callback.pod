@@ -686,44 +686,6 @@ be saved. The callback has the following signature:
 
 =back
 
-=head2 MT::App::Trackback
-
-This application handles receiving all TrackBack pings sent to the
-Movable Type installation.
-
-=over 4
-
-=item * TBPingThrottleFilter
-
-    callback($cb, $app, $trackback)
-
-This callback is issued early on upon receiving a TrackBack ping and it
-allows the callback code to return a boolean as to whether the request
-should be accepted or rejected. So if the callback returns 0, it signals
-a reject for the ping. Returning 1 will accept it for further processing.
-
-    sub trackback_throttle_filter {
-        my ($cb, $app, $trackback) = @_;
-        ...
-        $boolean; # 1 to accept, 0 to reject
-    }
-
-=item * TBPingFilter
-
-    callback($cb, $app, $ping)
-
-Called once the TrackBack ping object has been constructed, but before
-saving it. If any TBPingFilter callback returns false, the ping will
-not be saved. The callback has the following signature:
-
-    sub trackback_filter {
-        my ($cb, $app, $ping) = @_;
-        ...
-        $boolean; # 1 to accept, 0 to reject
-    }
-
-=back
-
 =head2 MT::App::ActivityFeeds
 
 The Activity Feeds application handles the generation of various system
@@ -738,8 +700,6 @@ callbacks that are used include:
 =item * ActivityFeed.system
 
 =item * ActivityFeed.comment
-
-=item * ActivityFeed.ping
 
 =item * ActivityFeed.entry
 

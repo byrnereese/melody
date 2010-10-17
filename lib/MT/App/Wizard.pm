@@ -140,21 +140,6 @@ sub init_core_registry {
             },
         },
         optional_packages => {
-            'HTML::Entities' => {
-                link => 'http://search.cpan.org/dist/HTML-Entities',
-                label =>
-                    'This module is needed to encode special characters, but this feature can be turned off using the NoHTMLEntities option in mt-config.cgi.',
-            },
-            'LWP::UserAgent' => {
-                link => 'http://search.cpan.org/dist/LWP',
-                label =>
-                    'This module is needed if you wish to use the TrackBack system, the weblogs.com ping, or the MT Recently Updated ping.',
-            },
-            'HTML::Parser' => {
-                link => 'http://search.cpan.org/dist/HTML-Parser',
-                label =>
-                    'HTML::Parser is optional; It is needed if you wish to use the TrackBack system, the weblogs.com ping, or the MT Recently Updated ping.',
-            },
             'SOAP::Lite' => {
                 link    => 'http://search.cpan.org/dist/SOAP-Lite',
                 version => 0.50,

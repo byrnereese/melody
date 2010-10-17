@@ -206,7 +206,6 @@ sub _view_entry {
     my %cond = (
         EntryIfAllowComments => $entry->allow_comments,
         EntryIfCommentsOpen  => $entry->allow_comments eq '1',
-        EntryIfAllowPings    => $entry->allow_pings,
         EntryIfExtended      => $entry->text_more ? 1 : 0,
     );
     require MT::TemplateMap;

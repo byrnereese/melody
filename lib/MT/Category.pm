@@ -19,10 +19,8 @@ __PACKAGE__->install_properties({
         'blog_id' => 'integer not null',
         'label' => 'string(100) not null',
         'author_id' => 'integer',
-        'ping_urls' => 'text',
         'description' => 'text',
         'parent' => 'integer',
-        'allow_pings' => 'boolean',
         'basename' => 'string(255)',
     },
     indexes => {
@@ -38,13 +36,12 @@ __PACKAGE__->install_properties({
     },
     defaults => {
         parent => 0,
-        allow_pings => 0,
     },
     class_type => 'category',
     child_of => 'MT::Blog',
     audit => 1,
     meta => 1,
-    child_classes => ['MT::Placement', 'MT::Trackback', 'MT::FileInfo'],
+    child_classes => ['MT::Placement', 'MT::FileInfo'],
     datasource => 'category',
     primary_key => 'id',
 });
@@ -65,12 +62,6 @@ sub basename_prefix {
         $prefix .= MT->instance->config('CategoryNameNodash') ? '' : '-';
     }
     $prefix;
-}
-
-sub ping_url_list {
-    my $cat = shift;
-    return [] unless $cat->ping_urls && $cat->ping_urls =~ /\S/;
-    [ split /\r?\n/, $cat->ping_urls ];
 }
 
 sub publish_path {
@@ -187,45 +178,6 @@ sub save {
         my $name = MT::Util::make_unique_category_basename($cat);
         $cat->basename($name);
         $cat->SUPER::save(@_) or return;
-    }
-
-    ## If pings are allowed on this entry, create or update
-    ## the corresponding Trackback object for this entry.
-    require MT::Trackback;
-    if ($cat->allow_pings) {
-        my $tb;
-        unless ($tb = MT::Trackback->load({
-                                 category_id => $cat->id })) {
-            $tb = MT::Trackback->new;
-            $tb->blog_id($cat->blog_id);
-            $tb->category_id($cat->id);
-            $tb->entry_id(0);   ## entry_id can't be NULL
-        }
-        if (defined(my $pass = $cat->{__tb_passphrase})) {
-            $tb->passphrase($pass);
-        }
-        $tb->title($cat->label);
-        $tb->description($cat->description);
-        my $blog = MT::Blog->load($cat->blog_id)
-            or return;
-        my $url = $blog->archive_url;
-        $url .= '/' unless $url =~ m!/$!;
-        $url .= MT::Util::archive_file_for(undef, $blog,
-            'Category', $cat);
-        $tb->url($url);
-        $tb->is_disabled(0);
-        $tb->save
-            or return $cat->error($tb->errstr);
-    } else {
-        ## If there is a TrackBack item for this category, but
-        ## pings are now disabled, make sure that we mark the
-        ## object as disabled.
-        if (my $tb = MT::Trackback->load({
-                                  category_id => $cat->id })) {
-            $tb->is_disabled(1);
-            $tb->save
-                or return $cat->error($tb->errstr);
-        }
     }
     if ($clear_cache) {
         $pkg->clear_cache('blog_id' => $cat->blog_id);

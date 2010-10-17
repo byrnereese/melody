@@ -36,9 +36,6 @@ __PACKAGE__->install_properties({
         'text' => 'text',
         'text_more' => 'text',
         'convert_breaks' => 'string(30)',
-        'to_ping_urls' => 'text',
-        'pinged_urls' => 'text',
-        'allow_pings' => 'boolean',
         'keywords' => 'text',
         'tangent_cache' => 'text',
         'basename' => 'string(255)',
@@ -47,7 +44,6 @@ __PACKAGE__->install_properties({
         'week_number' => 'integer',
         'template_id' => 'integer',
         'comment_count' => 'integer',
-        'ping_count' => 'integer',
         'junk_log' => 'string meta',
 ## Have to keep this around for use in mt-upgrade.cgi.
         'category_id' => 'integer',

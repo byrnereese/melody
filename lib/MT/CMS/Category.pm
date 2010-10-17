@@ -11,21 +11,12 @@ sub edit {
 
     if ($id) {
         $param->{nav_categories} = 1;
-
-        #$param{ "tab_" . ( $app->query->param('tab') || 'details' ) } = 1;
-
-        # $app->add_breadcrumb($app->translate('Categories'),
-        #                      $app->uri( 'mode' => 'list_cat',
-        #                          args => { blog_id => $obj->blog_id }));
-        # $app->add_breadcrumb($obj->label);
         my $parent   = $obj->parent_category;
         my $site_url = $blog->site_url;
         $site_url   .= '/' unless $site_url =~ m!/$!;
         $param->{path_prefix} =
           $site_url . ( $parent ? $parent->publish_path : '' );
         $param->{path_prefix} .= '/' unless $param->{path_prefix} =~ m!/$!;
-        require MT::Trackback;
-        my $tb = MT::Trackback->load( { category_id => $obj->id } );
 
         my $tags_js = MT::Util::to_json(
             MT::Tag->cache(
@@ -51,28 +42,6 @@ sub edit {
         $param->{auth_pref_tag_delim}
             = chr( $app->user->entry_prefs->{tag_delim} );
 
-        if ($tb) {
-            my $list_pref = $app->list_pref('ping');
-            %$param = ( %$param, %$list_pref );
-            my $path = $app->config('CGIPath');
-            $path .= '/' unless $path =~ m!/$!;
-            if ($path =~ m!^/!) {
-                my ($blog_domain) = $blog->archive_url =~ m|(.+://[^/]+)|;
-                $path = $blog_domain . $path;
-            }
-
-            my $script = $app->config('TrackbackScript');
-            $param->{tb}     = 1;
-            $param->{tb_url} = $path . $script . '/' . $tb->id;
-            if ( $param->{tb_passphrase} = $tb->passphrase ) {
-                $param->{tb_url} .= '/'.encode_url( $param->{tb_passphrase} );
-            }
-            $app->load_list_actions(    
-                'ping', 
-                $param->{ping_table}[0], 
-                'pings'
-            );
-        }
     }
     1;
 }
