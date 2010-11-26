@@ -14,7 +14,7 @@ use MT::Util qw( start_end_day start_end_week
   format_ts offset_time_list first_n_words dirify get_entry
   encode_html encode_js remove_html wday_from_ts days_in
   spam_protect encode_php encode_url decode_html encode_xml
-  decode_xml relative_date asset_cleanup );
+  decode_xml relative_date asset_cleanup caturl trim );
 use MT::Request;
 use Time::Local qw( timegm timelocal );
 use MT::Promise qw( delay );
@@ -258,6 +258,8 @@ sub core_tags {
             'App:ListFilters'        => \&_hdlr_app_list_filters,
             'App:ActionBar'          => \&_hdlr_app_action_bar,
             'App:Link'               => \&_hdlr_app_link,
+            'App:HTMLHead'           => \&_hdlr_app_html_head,
+
             Var                      => \&_hdlr_get_var,
             CGIPath                  => \&_hdlr_cgi_path,
             AdminCGIPath             => \&_hdlr_admin_cgi_path,
@@ -2388,6 +2390,92 @@ $fields
 </form>
 EOT
 } ## end sub _hdlr_app_form
+
+###########################################################################
+
+=head2 App:HTMLHead
+
+This outputs any elements registered via the html_head registry keys.
+
+B<Attributes:>
+
+=over 4
+
+=item * type (optional)
+
+Provides a way for the tag to output one or more specific types of elements, 
+e.g. all of the `<script>` tags or all of the registered stylesheets. 
+Acceptable values are: "scripts," "links" and "stylesheets." The default 
+value is: "scripts,links,stylesheets."
+
+=item * indent (optional)
+
+The number of spaces to indent elements added to the <html> <head> element.
+
+=back
+
+=cut 
+
+sub _hdlr_app_html_head {
+    my ( $ctx, $args, $cond ) = @_;
+    my $app    = MT->instance;
+    my $types  = $args->{type} || 'stylesheets,scripts,links';
+    my $indent = $args->{indent} || 0;
+    my $out = '';
+    for my $sig ( keys %MT::Plugins ) {
+        my $plugin = $MT::Plugins{$sig};
+        my $obj    = $MT::Plugins{$sig}{object};
+        my $r      = $obj->{registry};
+        next unless $r->{html_head};
+        foreach my $type (split(',',$types)) {
+            $type = trim($type);
+            next unless $r->{html_head}->{$type};
+            foreach my $f (@{$r->{html_head}->{$type}}) {
+                if ( my $modes_str = $f->{modes} ) {
+                    my $mode = $app->mode();
+                    next unless ($modes_str =~ /\b$mode\b/);
+                }
+                if ( my $cond = $f->{condition} ) {
+                    if ( !ref($cond) ) {
+                        $cond = $f->{condition} = $app->handler_to_coderef($cond);
+                    }
+                    next unless $cond->($app);
+                }
+                if ($type eq 'stylesheets') {
+                    my $url = $f->{href};
+                    unless ($url =~ /^https?:\/\//) {
+                        $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url);
+                        $url .= '?v='.$r->{version} if $r->{version} > 0;
+                    }
+                    my $link = (' ' x $indent).'<link rel="stylesheet" type="text/css" href="'.$url.'" />'."\n";
+                    $out .= $link;
+                } elsif ($type eq 'links') {
+                    my $url = $f->{href};
+                    $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url)
+                        unless ($url =~ /^https?:\/\//);
+                    my $link = (' ' x $indent).'<link rel="'.$f->{rel}.'" ';
+                    $link .= 'type='.$f->{type}.'" ' if ($f->{type});
+                    $link .= 'href="'.$url.'" />'."\n";
+                    $out .= $link;
+                } elsif ($type eq 'scripts') {
+                    if ($f->{src}) {
+                        my $url = $f->{src};
+                        unless ($url =~ /^https?:\/\//) {
+                            $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url);
+                            $url .= '?v='.$r->{version} if $r->{version} > 0;
+                        }
+                        my $link = (' ' x $indent).'<script type="text/javascript" src="'.$url.'"></script>'."\n";
+                        $out .= $link;
+                    } elsif ($f->{content}) {
+                        my $link .= (' ' x $indent).'<script type="text/javascript">'."\n".$f->{content}."\n".(' ' x $indent)."</script>\n";
+                        $out .= $link;
+                    }
+                }
+            }
+        }
+    }
+    return $out;
+} ## end sub _hdlr_app_html_head
 
 ###########################################################################
 
