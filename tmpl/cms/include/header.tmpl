@@ -9,12 +9,14 @@
 <mt:if name="feed_url">
     <link type="application/atom+xml" rel="alternate" <mt:if name="feed_name">title="<mt:var name="feed_name" escape="html">" </mt:if>href="<mt:var name="feed_url" escape="html">" />
 </mt:if>
+<mtapp:htmlhead type="links" indent="2">
 <mt:unless name="optimize_ui">
     <link rel="stylesheet" href="<$mt:var name="static_uri"$>styles.css?v=<mt:var name="mt_version_id" escape="url">" type="text/css" />
 <mt:else>
     <link rel="stylesheet" href="<$mt:var name="static_uri"$>css/main.css?v=<mt:var name="mt_version_id" escape="url">" type="text/css" />
 </mt:unless>
     <link rel="stylesheet" href="<$mt:var name="static_uri"$>melody/styles.css?v=<mt:var name="mt_version_id" escape="url">" type="text/css" />
+<mtapp:htmlhead type="stylesheets" indent="2">
     <!--[if IE]>
     <link rel="stylesheet" href="<$mt:var name="static_uri"$>css/hacks/ie.css?v=<mt:var name="mt_version_id" escape="url">" type="text/css" />
     <![endif]-->
@@ -62,6 +64,7 @@
 <mt:if name="local_lang_id" ne="en-us">
 <script type="text/javascript" src="<$mt:var name="static_uri"$>mt_<$mt:var name="local_lang_id"$>.js?v=<mt:var name="mt_version_id" escape="URL">" charset="utf-8"></script>
 </mt:if>
+<mtapp:htmlhead type="scripts" indent="2">
 <$mt:var name="js_include"$>
 </head>
 
