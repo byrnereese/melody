@@ -5,12 +5,11 @@ use warnings;
 use Carp qw( croak );
 use MT::Util
   qw( relative_date      offset_time    offset_time_list    epoch2ts
-  ts2epoch format_ts encode_html    decode_html         dirify );
+      ts2epoch format_ts encode_html    decode_html         dirify );
 use ConfigAssistant::Util
   qw( find_theme_plugin     find_template_def   find_option_def
-  find_option_plugin    process_file_upload );
+      find_option_plugin    process_file_upload plugin_static_web_path );
 use JSON;
-
 # use MT::Log::Log4perl qw( l4mtdump ); use Log::Log4perl qw( :resurrect );
 our $logger;
 
@@ -21,32 +20,29 @@ sub tag_plugin_static_web_path {
     if ( !$obj ) {
         return
           $ctx->error(
-                   MT->translate(
-                                  "The plugin you specified '[_2]' in '[_1]' "
-                                    . "could not be found.",
-                                  $ctx->stash('tag'),
-                                  $sig
-                   )
+            MT->translate(
+                  "The plugin you specified '[_2]' in '[_1]' "
+                . "could not be found.",
+                $ctx->stash('tag'),
+                $sig
+            )
           );
     }
     elsif ( $obj->registry('static_version') ) {
-        my $url = MT->instance->static_path;
-        $url .= '/' unless $url =~ m!/$!;
-        $url .= 'support/plugins/' . $obj->id . '/';
-        return $url;
+        return plugin_static_web_path($obj);
     }
     else {
 
         # TODO - perhaps this should default to: mt-static/plugins/$sig?
         return
           $ctx->error(
-               MT->translate(
-                           "The plugin you specified '[_2]' in '[_1]' has not"
-                             . "registered a static directory. Please use "
-                             . "<mt:StaticWebPath> instead.",
-                           $ctx->stash('tag'),
-                           $sig
-               )
+            MT->translate(
+                  "The plugin you specified '[_2]' in '[_1]' has not"
+                . "registered a static directory. Please use "
+                . "<mt:StaticWebPath> instead.",
+                $ctx->stash('tag'),
+                $sig
+            )
           );
     }
 } ## end sub tag_plugin_static_web_path
@@ -58,28 +54,26 @@ sub tag_plugin_static_file_path {
     if ( !$obj ) {
         return
           $ctx->error(
-                   MT->translate(
-                                  "The plugin you specified '[_2]' in '[_1]' "
-                                    . "could not be found.",
-                                  $ctx->stash('tag'),
-                                  $sig
-                   )
+            MT->translate(
+                 "The plugin you specified '[_2]' in '[_1]' "
+                . "could not be found.",
+                $ctx->stash('tag'),
+                $sig
+            )
           );
     }
     elsif ( $obj->registry('static_version') ) {
-        return
-          File::Spec->catdir( MT->instance->static_file_path,
-                              'support', 'plugins', $obj->id );
+        return plugin_static_file_path($obj);
     }
     else {
         return
           $ctx->error(
-                  MT->translate(
-                              "The plugin you specified in '[_1]' has not "
-                                . "registered a static directory. Please use "
-                                . "<mt:StaticFilePath> instead.",
-                              $_[0]->stash('tag')
-                  )
+            MT->translate(
+                  "The plugin you specified in '[_1]' has not "
+                . "registered a static directory. Please use "
+                . "<mt:StaticFilePath> instead.",
+                $_[0]->stash('tag')
+            )
           );
     }
 } ## end sub tag_plugin_static_file_path
@@ -1011,7 +1005,7 @@ sub _hdlr_field_category_list {
     my ( $ctx, $args, $cond ) = @_;
     my $field = $ctx->stash('field') or return _no_field($ctx);
     my $value = _get_field_value($ctx);
-    my @ids   = ref($value) eq 'ARRAY' ? @$value : ($value);
+    my @ids = ref($value) eq 'ARRAY' ? @$value : ($value);
     my $class = $ctx->stash('obj_class');
 
     my @categories = MT->model($class)->load( { id => \@ids } );
