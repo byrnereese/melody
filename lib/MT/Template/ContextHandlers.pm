@@ -2416,6 +2416,13 @@ The number of spaces to indent elements added to the <html> <head> element.
 
 =cut 
 
+sub _is_absolute {
+    my ($url) = @_;
+    return 1 if ( $url =~ /^(https?|ftp|file):/ ||
+                  $url =~ /^\// || 
+                  $url !~ /\// );
+}
+
 sub _hdlr_app_html_head {
     my ( $ctx, $args, $cond ) = @_;
     my $app    = MT->instance;
@@ -2443,7 +2450,7 @@ sub _hdlr_app_html_head {
                 }
                 if ($type eq 'stylesheets') {
                     my $url = $f->{href};
-                    unless ($url =~ /^https?:\/\//) {
+                    unless (_is_absolute($url)) {
                         $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url);
                         $url .= '?v='.$r->{version} if $r->{version} > 0;
                     }
@@ -2452,15 +2459,15 @@ sub _hdlr_app_html_head {
                 } elsif ($type eq 'links') {
                     my $url = $f->{href};
                     $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url)
-                        unless ($url =~ /^https?:\/\//);
+                        unless (_is_absolute($url));
                     my $link = (' ' x $indent).'<link rel="'.$f->{rel}.'" ';
                     $link .= 'type='.$f->{type}.'" ' if ($f->{type});
                     $link .= 'href="'.$url.'" />'."\n";
                     $out .= $link;
                 } elsif ($type eq 'scripts') {
                     if ($f->{src}) {
-                        my $url = $f->{src};
-                        unless ($url =~ /^https?:\/\//) {
+                        my $url = $f->{src}; 
+                        unless (_is_absolute($url)) {
                             $url = caturl(ConfigAssistant::Util::plugin_static_web_path($obj),$url);
                             $url .= '?v='.$r->{version} if $r->{version} > 0;
                         }
