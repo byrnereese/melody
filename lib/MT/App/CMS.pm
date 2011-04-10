@@ -1907,17 +1907,18 @@ sub build_page {
 } ## end sub build_page
 
 sub build_blog_selector {
-    my $app     = shift;
+    my ($ctx, $args, $cond) = @_;
+    my $app     = MT->instance;
     my $q       = $app->query;
-    my ($param) = @_;
 
-    return if exists $param->{top_blog_loop};
+    my $param = {};
 
     my $blog = $app->blog;
     my $blog_id = $blog->id if $blog;
+
     $param->{dynamic_all} = $blog->custom_dynamic_templates eq 'all' if $blog;
 
-    my $blog_class = $app->model('blog');
+    my $blog_class = MT->model('blog');
     my $auth = $app->user or return;
 
     # Any access to a blog will put it on the top of your
@@ -1940,7 +1941,7 @@ sub build_blog_selector {
     @fav_blogs = grep { $_ != $blog_id } @fav_blogs if $blog_id;
 
     # Special case for when a user only has access to a single blog.
-    if (    ( !defined( $q->param('blog_id') ) )
+    if (    ( !defined( $blog_id ) )
          && ( @blogs == 1 )
          && ( scalar @fav_blogs <= 1 ) )
     {
@@ -2031,6 +2032,10 @@ sub build_blog_selector {
     {
         $param->{no_submenu} = 1;
     }
+    my $tmpl = $app->load_tmpl( 'include/blog_selector.tmpl', $param );
+    $tmpl->context( $ctx );
+    $tmpl->param($param);
+    return $tmpl->output( );
 } ## end sub build_blog_selector
 
 sub build_menus {
