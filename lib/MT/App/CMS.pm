@@ -1916,6 +1916,13 @@ sub build_blog_selector {
     my $blog = $app->blog;
     my $blog_id = $blog->id if $blog;
 
+    if ($blog) {
+        $param->{blog_name}         = $blog->name;
+        $param->{blog_id}           = $blog->id;
+        $param->{blog_url}          = $blog->site_url;
+        $param->{blog_template_set} = $blog->template_set;
+    }
+
     $param->{dynamic_all} = $blog->custom_dynamic_templates eq 'all' if $blog;
 
     my $blog_class = MT->model('blog');
@@ -1927,7 +1934,7 @@ sub build_blog_selector {
 
     my %args;
     $args{join} =
-      MT::Permission->join_on(
+      MT->model('permission')->join_on(
                                'blog_id',
                                {
                                   author_id   => $auth->id,
@@ -2014,7 +2021,7 @@ sub build_blog_selector {
     if (@blogs) {
         my @perms
           = grep { !$_->is_empty }
-          MT::Permission->load(
+          MT->model('permission')->load(
                         { author_id => $auth->id, blog_id => \@fav_blogs, } );
         my %perms = map { $_->blog_id => $_ } @perms;
         for my $blog (@blogs) {
@@ -2033,8 +2040,6 @@ sub build_blog_selector {
         $param->{no_submenu} = 1;
     }
     my $tmpl = $app->load_tmpl( 'include/blog_selector.tmpl', $param );
-    $tmpl->context( $ctx );
-    $tmpl->param($param);
     return $tmpl->output( );
 } ## end sub build_blog_selector
 
