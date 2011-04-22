@@ -2185,7 +2185,7 @@ sub build_menus {
                              }
                   );
             }
-            @sub = sort { $a->{order} <=> $b->{order} } @sub;
+            @sub = sort { ($a->{order} || 0) <=> ($b->{order} || 0) } @sub;
 
             @sub = grep { $_->{allowed} } @sub if $hide_disabled_options;
             if ( !$menu->{mode} ) {
