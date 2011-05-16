@@ -1891,10 +1891,8 @@ sub build_page {
         }
     }
 
-    # FIXME Should these be run if you're building a page without a blog
-    # selector or menus?  For example, chromeless screens like login and
-    # error.tmpl
-    $app->build_blog_selector($param);
+    # FIXME Should these be run if you're building a page without menus?
+    # For example, chromeless screens like login and error.tmpl
     $app->build_menus($param);
     if ( !ref($page)
          || ( $page->isa('MT::Template') && !$page->param('page_actions') ) )
@@ -1909,17 +1907,25 @@ sub build_page {
 } ## end sub build_page
 
 sub build_blog_selector {
-    my $app     = shift;
+    my ($ctx, $args, $cond) = @_;
+    my $app     = MT->instance;
     my $q       = $app->query;
-    my ($param) = @_;
 
-    return if exists $param->{top_blog_loop};
+    my $param = {};
 
     my $blog = $app->blog;
     my $blog_id = $blog->id if $blog;
+
+    if ($blog) {
+        $param->{blog_name}         = $blog->name;
+        $param->{blog_id}           = $blog->id;
+        $param->{blog_url}          = $blog->site_url;
+        $param->{blog_template_set} = $blog->template_set;
+    }
+
     $param->{dynamic_all} = $blog->custom_dynamic_templates eq 'all' if $blog;
 
-    my $blog_class = $app->model('blog');
+    my $blog_class = MT->model('blog');
     my $auth = $app->user or return;
 
     # Any access to a blog will put it on the top of your
@@ -1928,7 +1934,7 @@ sub build_blog_selector {
 
     my %args;
     $args{join} =
-      MT::Permission->join_on(
+      MT->model('permission')->join_on(
                                'blog_id',
                                {
                                   author_id   => $auth->id,
@@ -1942,7 +1948,7 @@ sub build_blog_selector {
     @fav_blogs = grep { $_ != $blog_id } @fav_blogs if $blog_id;
 
     # Special case for when a user only has access to a single blog.
-    if (    ( !defined( $q->param('blog_id') ) )
+    if (    ( !defined( $blog_id ) )
          && ( @blogs == 1 )
          && ( scalar @fav_blogs <= 1 ) )
     {
@@ -2015,7 +2021,7 @@ sub build_blog_selector {
     if (@blogs) {
         my @perms
           = grep { !$_->is_empty }
-          MT::Permission->load(
+          MT->model('permission')->load(
                         { author_id => $auth->id, blog_id => \@fav_blogs, } );
         my %perms = map { $_->blog_id => $_ } @perms;
         for my $blog (@blogs) {
@@ -2033,6 +2039,8 @@ sub build_blog_selector {
     {
         $param->{no_submenu} = 1;
     }
+    my $tmpl = $app->load_tmpl( 'include/blog_selector.tmpl', $param );
+    return $tmpl->output( );
 } ## end sub build_blog_selector
 
 sub build_menus {
@@ -2177,7 +2185,7 @@ sub build_menus {
                              }
                   );
             }
-            @sub = sort { $a->{order} <=> $b->{order} } @sub;
+            @sub = sort { ($a->{order} || 0) <=> ($b->{order} || 0) } @sub;
 
             @sub = grep { $_->{allowed} } @sub if $hide_disabled_options;
             if ( !$menu->{mode} ) {
@@ -2488,7 +2496,7 @@ sub load_template_prefs {
     if ( !$prefs ) {
         $prefs = '';
     }
-    my @p = split /,/, $prefs;
+    my @p = split(/,/, $prefs);
     for my $p (@p) {
         if ( $p =~ m/^(.+?):(\d+)$/ ) {
             $param{ 'disp_prefs_height_' . $1 } = $2;
@@ -2501,7 +2509,7 @@ sub _parse_entry_prefs {
     my $app = shift;
     my ( $prefs, $param, $fields ) = @_;
 
-    my @p = split /,/, $prefs;
+    my @p = split(/,/, $prefs);
     for my $p (@p) {
         if ( $p =~ m/^(.+?):(\d+)$/ ) {
             my ( $name, $num ) = ( $1, $2 );
@@ -2547,18 +2555,18 @@ sub load_entry_prefs {
     # defaults:
     if ( !$prefs ) {
         $prefs = $app->load_default_entry_prefs;
-        ( $prefs, $pos ) = split /\|/, $prefs;
+        ( $prefs, $pos ) = split(/\|/, $prefs);
         $is_from_db = 0;
         $app->_parse_entry_prefs( $prefs, \%param, \my @fields );
         $param{disp_prefs_default_fields} = \@fields;
     }
     else {
-        ( $prefs, $pos ) = split /\|/, $prefs;
+        ( $prefs, $pos ) = split(/\|/, $prefs);
     }
     $app->_parse_entry_prefs( $prefs, \%param, \my @custom_fields );
     if ($is_from_db) {
         my $default_prefs = $app->load_default_entry_prefs;
-        ( $default_prefs, my ($default_pos) ) = split /\|/, $default_prefs;
+        ( $default_prefs, my ($default_pos) ) = split(/\|/, $default_prefs);
         $pos ||= $default_pos;
         $app->_parse_entry_prefs(
                                   $default_prefs,
@@ -2699,7 +2707,7 @@ sub user_blog_prefs {
 
     my $perms = $app->permissions;
     return {} unless $perms;
-    my @prefs = split /,/, $perms->blog_prefs || '';
+    my @prefs = split(/,/, $perms->blog_prefs || '');
     my %prefs;
     foreach (@prefs) {
         my ( $name, $value ) = split /=/, $_, 2;
@@ -2878,7 +2886,7 @@ sub _entry_prefs_from_params {
         $prefs .= ':' . $fields{$_} if $fields{$_} > 1;
     }
     if ( $type && lc $type eq 'custom' ) {
-        my @fields = split /,/, $q->param('custom_prefs');
+        my @fields = split(/,/, $q->param('custom_prefs'));
         foreach (@fields) {
             $prefs .= ',' if $prefs ne '';
             $prefs .= $_;

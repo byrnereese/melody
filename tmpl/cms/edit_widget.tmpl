@@ -324,7 +324,7 @@ TC.attachLoadEvent( init );
           id="name"
           label="<__trans phrase="Set Name">">
           <div class="textarea-wrapper">
-              <input name="name" id="name" class="full-width" value="<mt:var name="name" escape="html">" />
+              <input type="text" name="name" id="name" class="full-width" value="<mt:var name="name" escape="html">" />
           </div>
       </mtapp:setting>
 
@@ -361,7 +361,7 @@ TC.attachLoadEvent( init );
             type="submit"
             accesskey="s"
             title="<__trans phrase="Save changes to this widget set (s)">"
-            class="primary-button"
+            class="primary button"
             ><__trans phrase="Save Changes"></button>
     </mt:setvarblock>
     <mt:include name="include/actions_bar.tmpl" bar_position="bottom" hide_pager="1" settings_bar="1">
