@@ -2057,16 +2057,9 @@ sub logout {
     }
 
     # Displaying the login box
-    $app->load_tmpl(
-                    'login.tmpl',
-                    {
-                      logged_out     => 1,
-                      no_breadcrumbs => 1,
-                      login_fields   => MT::Auth->login_form($app) || '',
-                      can_recover_password => MT::Auth->can_recover_password,
-                      delegate_auth        => $delegate || 0,
-                    }
-    );
+    $app->show_login({
+        logged_out => 1,
+    });
 } ## end sub logout
 
 sub create_user_pending {
@@ -2626,6 +2619,21 @@ sub show_error {
     return $app->l10n_filter($out);
 } ## end sub show_error
 
+sub show_login {
+    my $app = shift;
+    my ( $param ) = @_;
+    $param ||= {};
+    require MT::Auth;
+    $app->build_page('login.tmpl', {
+        error                => $app->errstr,
+        no_breadcrumbs       => 1,
+        login_fields         => MT::Auth->login_form($app),
+        can_recover_password => MT::Auth->can_recover_password,
+        delegate_auth        => MT::Auth->delegate_auth,
+        %$param,
+    });
+}
+
 sub pre_run {
     my $app = shift;
     my $q   = $app->query;
@@ -2725,17 +2733,7 @@ sub run {
                     $body
                       = ref($author) eq $app->user_class
                       ? $app->show_error( { error => $app->errstr } )
-                      : $app->build_page(
-                        'login.tmpl',
-                        {
-                           error          => $app->errstr,
-                           no_breadcrumbs => 1,
-                           login_fields => sub { MT::Auth->login_form($app) },
-                           can_recover_password =>
-                             sub { MT::Auth->can_recover_password },
-                           delegate_auth => sub { MT::Auth->delegate_auth },
-                        }
-                      );
+                      : $app->show_login();
                     last REQUEST;
                 }
             } ## end if ($requires_login)
@@ -2840,16 +2838,8 @@ sub run {
 
         # login again!
         require MT::Auth;
-        $body = $app->build_page(
-                    'login.tmpl',
-                    {
-                      error                => $app->errstr,
-                      no_breadcrumbs       => 1,
-                      login_fields         => MT::Auth->login_form($app),
-                      can_recover_password => MT::Auth->can_recover_password,
-                      delegate_auth        => MT::Auth->delegate_auth,
-                    }
-        ) or $body = $app->show_error( { error => $app->errstr } );
+        $body = $app->show_login
+            or $body = $app->show_error( { error => $app->errstr } );
     }
     elsif ( !defined $body ) {
         my $err = $app->errstr || $@;
@@ -4278,6 +4268,10 @@ Handles the display of an application error.
 =head2 $app->envelope
 
 This method is deprecated.
+
+=head2 $app->show_login(\%param)
+
+Builds the log-in screen.
 
 =head2 $app->takedown
 
