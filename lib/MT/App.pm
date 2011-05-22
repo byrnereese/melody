@@ -2945,7 +2945,15 @@ sub handlers_for_mode {
     }
 
     $code ||= $app->{vtbl}{$mode};
-
+    
+    if ( $code && ref $code eq 'HASH' && $code->{condition} ) {
+        my $cond = $code->{condition};
+        if ( !ref($cond) ) {
+            $cond = $code->{condition} = $app->handler_to_coderef($cond);
+        }
+        return undef unless $cond->( $app );
+    }
+    
     return $code;
 }
 
