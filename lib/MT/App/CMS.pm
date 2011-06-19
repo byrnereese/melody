@@ -58,6 +58,10 @@ sub core_methods {
             code     => "${pkg}Common::save_list_prefs",
             app_mode => 'JSON',
         },
+        'save_ui_prefs' => {
+            code     => "${pkg}Common::save_ui_prefs",
+            app_mode => 'JSON',
+        },
         'delete'         => "${pkg}Common::delete",
         'search_replace' => "${pkg}Search::search_replace",
         'list_revision'  => "${pkg}Common::list_revision",

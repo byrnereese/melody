@@ -1538,6 +1538,37 @@ sub save_list_prefs {
     return $app->json_result( { success => 1 } );
 }
 
+sub _ui_prefs_from_params {
+    my $app  = shift;
+    my $q    = $app->query;
+    my %prefs;
+    my %params = $app->param_hash();
+    foreach my $key ( grep { !/(__mode|token|blog_id)/ } keys %params ) {
+        my $val = $q->param( $key );
+        if ($val && $val eq 'none') {
+            $val = '';
+        }
+        $prefs{ $key } = $val;
+    }
+    \%prefs;
+} ## end sub _ui_prefs_from_params
+
+sub save_ui_prefs {
+    my $app   = shift;
+    my $perms = $app->user->permissions
+        or return $app->json_error( $app->translate("No permissions") );
+    $app->validate_magic() 
+        or return $app->json_error( $app->translate("Invalid magic") );
+    require JSON;
+    my $prefs = JSON::from_json($perms->ui_prefs);
+    my $new   = _ui_prefs_from_params($app);
+    MT::__merge_hash( $prefs, $new, 1 );
+    $perms->ui_prefs( JSON::to_json($prefs) );
+    $perms->save
+        or return $app->json_error( $app->translate( "Saving permissions failed: [_1]", $perms->errstr ) );
+    return $app->json_result( { success => 1 } );
+} ## end save_ui_prefs 
+
 sub delete {
     my $app  = shift;
     my $q    = $app->query;
