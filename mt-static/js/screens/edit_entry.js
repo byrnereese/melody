@@ -164,6 +164,36 @@ function listPreviousPings () {
 }
 
 jQuery(document).ready( function($) {
+    $( '#fields-col-1' ).sortable({
+        handle: '.field-header label',
+        cursor: 'move',
+        update: function(event, ui) {
+            var order = Array();
+            var vis = Array();
+            $( $(this).sortable('toArray') ).each( function( i,elem ) {
+                var f = elem.replace(/sortable-field-/g,'');
+                order.push( f );
+                if ( !$('#' + elem + ' .field').hasClass('hidden') ) {
+                    vis.push( f );
+                }
+            });
+		    $.post( ScriptURI, {
+                '__mode'            : 'save_ui_prefs',
+                'magic_token'       : MagicToken,
+                'blog_id'           : BlogID,
+                'entry_field_order' : order.toString(),
+                'entry_field_vis'   : vis.toString()
+            }, function(data, status, xhr) {
+                if (typeof data['error'] != 'undefined') {
+                    // ignore silently - error can occur if person leaves page prior to
+                    // ajax call returning. 
+                } else {
+                    // do nothing
+                }
+            },'json');
+        },
+    });
+    
 /*
     $('button.save').click( function() { $(this).parents('form').find('input[name=__mode]').val('save_entry'); });
     $('button.preview').click( function() { $(this).parents('form').find('input[name=__mode]').val('preview_entry'); });

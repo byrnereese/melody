@@ -732,6 +732,8 @@ mt = {
     <mt:include name="include/actions_bar.tmpl" hide_pager="1">
 
     <mt:loop id="content_fields" name="field_loop">
+        <mt:if name="__first__"><ul id="fields-col-1"></mt:if>
+        <li id="sortable-field-<mt:var name="field_id">" class="sortable-field">
         <mt:if name="field_html">
             <mtapp:setting
                 id="$field_id"
@@ -855,7 +857,8 @@ mt = {
 
         </mt:if>
         </mt:if>
-
+        </li>
+        <mt:if name="__last__"></ul></mt:if>
     </mt:loop>
 
 <mt:include name="include/actions_bar.tmpl" bar_position="bottom" hide_pager="1">

@@ -482,6 +482,12 @@ sub edit {
         $param->{rich_editor_tmpl} = $rte_tmpl;
     }
 
+    my $perms = $app->user->permissions;
+    require JSON;
+    my $user_prefs = JSON::from_json($perms->ui_prefs);
+    my @fields = ( $user_prefs->{entry_field_order} ? 
+        split(',',$user_prefs->{entry_field_order})
+        : qw( title text tags excerpt keywords ) );
     $param->{object_type}  = $type;
     $param->{object_label} = $class->class_label;
     $param->{field_loop} ||= [
@@ -494,7 +500,7 @@ sub edit {
                : $param->{"disp_prefs_show_$_"},
                field_label => $app->translate( ucfirst($_) ),
             }
-          } qw( title text tags excerpt keywords )
+          } @fields
     ];
     $param->{quickpost_js} = MT::CMS::Entry::quickpost_js( $app, $type );
     if ( 'page' eq $type ) {
