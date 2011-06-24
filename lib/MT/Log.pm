@@ -27,16 +27,17 @@ use MT::Blog;
 __PACKAGE__->install_properties( {
                    column_defs => {
                                     'id' => 'integer not null auto_increment',
-                                    'message'   => 'text',
-                                    'ip'        => 'string(50)',
-                                    'blog_id'   => 'integer',
-                                    'author_id' => 'integer',
-                                    'level'     => 'integer',
-                                    'category'  => 'string(255)',
-                                    'metadata'  => 'string(255)',
+                                    'message'    => 'text',
+                                    'ip'         => 'string(50)',
+                                    'blog_id'    => 'integer',
+                                    'author_id'  => 'integer',
+                                    'level'      => 'integer',
+                                    'request_id' => 'integer',
+                                    'category'   => 'string(255)',
+                                    'metadata'   => 'string(255)',
                    },
-                   indexes => { created_on => 1, blog_id => 1, level => 1, },
-                   defaults => { blog_id => 0, author_id => 0, level => 1, },
+                   indexes => { created_on => 1, blog_id => 1, level => 1, request_id => 1, },
+                   defaults => { blog_id => 0, author_id => 0, level => 1, request_id => 0, },
                    child_of => 'MT::Blog',
                    datasource   => 'log',
                    audit        => 1,
@@ -316,6 +317,12 @@ sub init {
       @ts[ 3, 2, 1, 0 ];
     $log->created_on($ts);
     $log->modified_on($ts);
+
+    # Seed the object with a request ID. That way we can correlate related log requests.
+    require MT::Request;
+    my $r = MT::Request->instance();
+    $log->request_id( $r->id() );
+
     $log;
 }
 

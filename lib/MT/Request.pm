@@ -20,8 +20,13 @@ sub finish { undef $r }
 
 sub reset { $r->{__stash} = {} if $r }
 
+sub id { $r->{__id} };
+
 sub new {
     my $req = bless { __stash => {} }, $_[0];
+    # FIXME - better random number?
+    my $id = int(rand() * 16 ** 8);
+    $req->{__id} = $id;
     $req;
 }
 
