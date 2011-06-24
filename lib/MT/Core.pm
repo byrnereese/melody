@@ -1145,7 +1145,8 @@ BEGIN {
             asset => {
                 object_label     => 'Asset',
                 primary          => 'label',
-                permission       => 'access_to_asset_list',
+#                permission       => 'access_to_asset_list',
+                permission       => 'manage_assets',
                 default_sort_key => 'created_on',
             },
             log => {

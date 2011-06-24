@@ -793,11 +793,11 @@ sub list {
                 my $disp = $sub->{display} || '';
                 push @subfields,
                   {
-                    display => $cols{ $id . '.' . $sub->{id} }
-                      || $disp eq 'default',
-                    class      => $sub->{id},
+                    display => $cols{ $id . '.' . $sub->{class} }
+                        || $sub->{display} eq 'default',
+                    class      => $sub->{class},
                     label      => $app->translate( $sub->{label} ),
-                    is_default => $disp eq 'default' ? 1 : 0,
+                    is_default => $sub->{display} eq 'default' ? 1 : 0,
                   };
             }
         }
