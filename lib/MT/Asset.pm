@@ -59,6 +59,7 @@ sub list_props {
             bulk_html => sub {
                 my $prop = shift;
                 my ( $objs, $app ) = @_;
+                my $join_str = '= objecttag_tag_id';
                 my @userpics = MT->model('objecttag')->load(
                     {   blog_id           => 0,
                         object_datasource => 'asset',
@@ -68,7 +69,7 @@ sub list_props {
                         join      => MT->model('tag')->join_on(
                             undef,
                             {   name => '@userpic',
-                                id   => \'= objecttag_tag_id'
+                                id   => \$join_str
                             }
                         ),
                     }
@@ -261,11 +262,12 @@ sub list_props {
                 my ( $args, $db_terms, $db_args ) = @_;
                 my $super_terms = $prop->super(@_);
                 $db_args->{joins} ||= [];
+                my $join_str = "= asset_id";
                 push @{ $db_args->{joins} },
                     MT->model('asset')->meta_pkg->join_on(
                     undef,
                     {   type     => $prop->meta_type,
-                        asset_id => \"= asset_id",
+                        asset_id => \$join_str,
                         %$super_terms,
                     },
                     );
@@ -348,10 +350,11 @@ sub list_props {
                     );
                     my $status = $statuses{ $args->{value} };
                     $base_args->{joins} ||= [];
+                    my $join_str = '= asset_created_by';
                     push @{ $base_args->{joins} },
                         MT->model('author')->join_on(
                         undef,
-                        {   id     => \'= asset_created_by',
+                        {   id     => \$join_str,
                             status => $status,
                         },
                         );

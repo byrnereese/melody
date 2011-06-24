@@ -139,10 +139,11 @@ sub list_props {
                 my $prop = shift;
                 my ( $terms, $args ) = @_;
                 $args->{joins} ||= [];
+                my $join_str = '= log_author_id';
                 push @{ $args->{joins} }, MT->model('author')->join_on(
                     undef, undef,
                     {   sort      => 'nickname',
-                        condition => { id => \'= log_author_id', },
+                        condition => { id => \$join_str, },
                         direction => ( $args->{direction} || 'ascend' ),
                         type      => 'left',
                     },
@@ -195,7 +196,8 @@ sub list_props {
                     $prop->super(@_);
                 }
                 else {
-                    $db_terms->{class} = \' is null';
+                    my $join_str = ' is null';
+                    $db_terms->{class} = \$join_str;
                 }
             },
         },

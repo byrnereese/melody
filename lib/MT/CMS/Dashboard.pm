@@ -350,11 +350,12 @@ sub mt_blog_stats_widget_entry_tab {
         my $args
           = { limit => 10, sort => 'authored_on', direction => 'descend', };
         if ( !$user->is_superuser && !$blog_id ) {
+            my $join_str = '= entry_blog_id';
             $args->{join} =
               MT::Permission->join_on(
                                        undef,
                                        {
-                                          blog_id   => \'= entry_blog_id',
+                                          blog_id   => \$join_str,
                                           author_id => $user->id
                                        },
               );
@@ -454,11 +455,12 @@ sub generate_dashboard_stats_entry_tab {
 
     $terms->{blog_id} = $blog_id if $blog_id;
     if ( !$user->is_superuser && !$blog_id ) {
+        my $join_str = '= entry_blog_id';
         $args->{join} =
           MT::Permission->join_on(
                                    undef,
                                    {
-                                      blog_id   => \'= entry_blog_id',
+                                      blog_id   => \$join_str,
                                       author_id => $user_id
                                    },
           );
@@ -488,10 +490,11 @@ sub mt_blog_stats_tag_cloud_tab {
     $args->{sort}               = '1';                    # sort by count(*)
     $args->{direction}          = 'descend';
     $args->{limit}              = 100;
+    my $join_str = '= objecttag_tag_id';
     $args->{join} = MT::Tag->join_on(
                                       undef,
                                       {
-                                         id         => \'= objecttag_tag_id',
+                                         id         => \$join_str,
                                          is_private => 1
                                       },
                                       { not => { is_private => 1 } }
@@ -568,11 +571,12 @@ sub mt_blog_stats_widget_comment_tab {
         my $args
           = { limit => 10, sort => 'created_on', direction => 'descend', };
         if ( !$user->is_superuser && !$blog_id ) {
+            my $join_str = '= comment_blog_id';
             $args->{join} =
               MT::Permission->join_on(
                                        undef,
                                        {
-                                          blog_id   => \'= comment_blog_id',
+                                          blog_id   => \$join_str,
                                           author_id => $user->id
                                        },
               );
@@ -624,11 +628,12 @@ sub generate_dashboard_stats_comment_tab {
     $args->{range_incl}{created_on} = 1;
 
     if ( !$user->is_superuser && !$blog_id ) {
+        my $join_str = '= comment_blog_id';
         $args->{join} =
           MT::Permission->join_on(
                                    undef,
                                    {
-                                      blog_id   => \'= comment_blog_id',
+                                      blog_id   => \$join_str,
                                       author_id => $user_id
                                    },
           );
