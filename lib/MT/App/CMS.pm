@@ -79,7 +79,7 @@ sub core_methods {
             code => "${pkg}Asset::dialog_list_asset",
             condition => sub {
                 my $app = shift;
-                return 0 unless $app->param('dialog_view');
+                return 0 unless $app->query->param('dialog_view');
                 return 1;
             }
         },
