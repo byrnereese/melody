@@ -755,6 +755,7 @@ mt = {
                 help_page="entries"
                 help_section="entry_title">
                 <input type="text" name="title" id="title" value="<$mt:var name="title" escape="html"$>" maxlength="255" mt:watch-change="1" onkeyup="rebasename(this)" />
+                <mt:if name="id"><p class="url">URL: <a href="<mt:var name="entry_permalink">" target="_new"><mt:var name="entry_permalink"></a></p></mt:if>
             </mtapp:setting>
 
         <mt:else eq="text">
