@@ -7,40 +7,68 @@
 # $Id$
 
 use strict;
+use lib './lib';
 
-if ( grep {/--help/} @ARGV ) {
-    print <<USAGE;
-Mode d\'emploi:
+sub usage {'[-lang=<lang>] [-base=<plugin id>] -dir=<directory> [-out=<filename>] [-verbose]'}
 
-    make-l10n <root directory>
+sub help {
+    return q{
+        Generated translation files for code and templates.
 
-<root directory> defaults to typepad.
-USAGE
-    exit(1);
+        -lang=<language> The language code you want to generate a 
+                         translation file for, e.g. fr, de, en_us, jp
+        -base=<string>   The root class of the package that will be
+                         generated. This often corresponds to your
+                         plugin's id. 
+        -dir=<string>    The root directory of your plugin to scan for 
+                         files for translatable strings. 
+                         e.g. plugins/MyPluginName/
+        -out=<string>    The name of the file to output the contents of
+                         the generated translation file into. 
+                         Default: <language>.pm
+        -verbose         Create more output to help with troubleshooting.
+        -help            This message.
+    };
 }
 
 my $wc           = 0;
-my $root_dir     = ( $ARGV[0] || 'typepad' );
-my $languagename = ( $ARGV[1] || 'fr' );
+my $root_dir     = '.';
+my $languagename = 'fr';
+my $base         = "MT";
+my $verbose      = 0;
+my $outfile;
+my $help;
 
+require Getopt::Long;
+Getopt::Long::GetOptions(
+    "lang=s"  => \$languagename,
+    "base=s"  => \$base,
+    "dir=s"   => \$root_dir,
+    "out=s"   => \$outfile,
+    "verbose" => \$verbose,
+    "help"    => \$help,
+);
+
+if ($help) { print help(); exit(1) };
+
+debug("Adding $root_dir to include path");
+eval("use lib '$root_dir';");
+
+my $packagename = $base."::L10N::".$languagename;
+debug("Generating language file: $packagename");
+
+$outfile ||= $languagename . '.pm';
+open OUTFILE,">$outfile" or die "Could not open $outfile to write to: $!";
 my $lib_dir = $root_dir . '/lib';
-
-use lib './lib';
-
-
-print <<"PACKAGENAME";
-package MT::L10N::$languagename;
-PACKAGENAME
-
 my $yr = ( localtime(time) )[5] + 1900;
-
 my $parent_class = $languagename eq 'en_us' ? 'MT::L10N' : 'MT::L10N::en_us';
-print <<"HEADER";
-# Copyright 2001-$yr Six Apart. This code cannot be redistributed without
-# permission from www.sixapart.com.  For more information, consult your
-# Movable Type license.
-#
-# \$Id\$
+my $lex = $base."::L10N::en_us";
+
+print OUTFILE <<"HEADER";
+# This language file was generated automatically by the make-l10n script. 
+# It was subsequently edited by a translator. 
+# 
+package $packagename;
 
 use strict;
 use $parent_class;
@@ -55,15 +83,30 @@ sub encoding { 'utf-8' }
 HEADER
 
 %MT::L10N::en_us::Lexicon = ();    ## Suppress warning.
-require MT::L10N::en_us;
-eval("require MT::L10N::$languagename");
+
+my @phrases;
+
+#require MT::L10N::en_us;
+#eval("require MT::L10N::$languagename");
+#debug("WARNING: Could not require MT::L10N::$languagename: " . $@) if $@;
+#push @phrases, keys %MT::L10N::en_us::Lexicon;
+
+debug("Requiring $lex\n");
+eval("require $lex");
+if ($@) {
+    debug("Getting phrases for $lex");
+    my $str = "push \@phrases, keys \%".$lex."::Lexicon";
+    debug("Evaling $str");
+    eval($str);
+    debug("WARNING: Could not load phrases for $lex: " . $@) if $@;
+} else {
+    debug("WARNING: Could not require $lex: " . $@);
+}
 use File::Find;
-
 find \&wanted, $root_dir;
-
-print "\n    ## Other phrases, with English translations.\n";
-for my $phrase ( keys %MT::L10N::en_us::Lexicon ) {
-    print encode_phrase(
+print OUTFILE "\n    ## Other phrases, with English translations.\n";
+for my $phrase ( @phrases ) {
+    print OUTFILE encode_phrase(
                          $phrase,
                          eval(
                                    '$MT::L10N::'
@@ -74,10 +117,10 @@ for my $phrase ( keys %MT::L10N::en_us::Lexicon ) {
 }
 
 
-print "\n    ## Error messages, strings in the app code.\n";
+print OUTFILE "\n    ## Error messages, strings in the app code.\n";
 find \&wanted_app, $root_dir;
 
-print <<FOOTER;
+print OUTFILE <<FOOTER;
 );
 
 
@@ -86,16 +129,18 @@ print <<FOOTER;
 ## New words: $wc
 FOOTER
 
+close OUTFILE;
+
 my %SeenPhrase;
 
 sub wanted {
     my $file = $File::Find::name;
-    return unless $file =~ /\.(tmpl|pl|cgi\.pre)$/;
-    print "\n    ## $file\n";
+    return unless $file =~ /\.(mtml|tmpl|pl|cgi\.pre)$/;
+    print OUTFILE "\n    ## $file\n";
     open my $fh, $_ or die "Can't open $_: $!";
     local $_ = do { local $/; <$fh> };
     close $fh;
-    while (/<MT_TRANS ([^>]+)>/g) {
+    while (/<(?:_|MT)_TRANS ([^>]+)>/gi) {
         my ( $msg, %args ) = ($1);
         while ( $msg =~ /(\w+)\s*=\s*(\\?["'])(.*?[^\\])\2/gs ) {    #"
 
@@ -107,7 +152,7 @@ sub wanted {
         next if $SeenPhrase{ $args{phrase} }++;
         next if $args{phrase} =~ /^_[A-Z]/;
         $args{phrase} =~ s/\\\'/\'/sg;
-        print encode_phrase(
+        print OUTFILE encode_phrase(
                              $args{phrase},
                              eval(
                                        '$MT::L10N::'
@@ -121,7 +166,7 @@ sub wanted {
 sub wanted_app {
     my $file = $File::Find::name;
     return unless $file =~ m!/mt\.js$! || $file =~ /\.(pm|pl|cgi\.pre)$/;
-    print "\n    ## $file\n";
+    print OUTFILE "\n    ## $file\n";
     open my $fh, $_ or die "Can't open $_: $!";
     local $_ = do { local $/; <$fh> };
     close $fh;
@@ -133,7 +178,7 @@ sub wanted_app {
             next if $phrase =~ /^_[A-Z]/;
             $phrase =~ s/\\\'/\'/sg
               ; # Turn escaped quotes back into regular quotes, because the encode_phrase will re-encode them if needed
-            print encode_phrase(
+            print OUTFILE encode_phrase(
                                  $phrase,
                                  eval(
                                            '$MT::L10N::'
@@ -158,7 +203,7 @@ sub wanted_app {
             my ($phrase) = ( $2 || $3 );
             next if $SeenPhrase{$phrase}++;
             next if $phrase =~ /^_[A-Z]/;
-            print encode_phrase(
+            print OUTFILE encode_phrase(
                                  $phrase,
                                  eval(
                                            '$MT::L10N::'
@@ -195,11 +240,14 @@ sub encode_phrase {
     }
 } ## end sub encode_phrase
 
-
 sub wordcount {
     my $l = shift;
     $l =~ s/[`!"$%^&*()_+={[}\];:@~#,.<>?\\\/]/ /g;    #`
     $l =~ s/\ ([ei])\ ([ge])\ / $1.$2./g;
     my @words = split( /\W*\s+\W*/, $l );    # see the Camel book p.39
     return ( $#words + 1 );
+}
+
+sub debug {
+    print STDERR $_[0]."\n" if $verbose;
 }
