@@ -785,7 +785,7 @@ function dateOption($node) {
 }
 
 function filterItem(type, datepicker_off) {
-  var $item = jQuery(mt.screen.filter_types[type]);
+  var $item = jQuery( filter_types[type] );
   if ( $item && $item.attr('class') && $item.attr('class').match(/no-edit/) ) {
     $item.find('input').attr('disabled', 1);
     $item.find('select').attr('disabled', 1);
@@ -1067,6 +1067,7 @@ function updateItemList () {
   });
 }
 
+var filter_types = Array();
 jQuery(document).ready( function($) {
 
     $.event.special.listReady = {
@@ -1374,11 +1375,10 @@ jQuery(document).ready( function($) {
     $('table.listing-table thead, table.listing-table tfoot').append('<tr>');
     $(line).appendTo('table.listing-table thead tr, table.listing-table tfoot tr');
 
-    var filter_types = {};
-    for (i=0;i<mt.screen.filter_types;i++) {
+    for (i in mt.screen.filter_types) {
         var fltr = mt.screen.filter_types[i];
         filter_types[ fltr.type ] = '<div class="filtertype type-'+fltr.type+(fltr.is_editable ? '' : 'no-edit')+(typeof fltr.base_type != 'undefined' ? ' base-'+fltr.base_type : '')+'"><div class="item-content">'+fltr.field+(fltr.is_singleton ? '' : '<span class="item-ctrl"><span class="item-action plus clickable icon-plus icon16 action-icon">'+mt.screen.trans.ADD+'</span><span class="item-action minus clickable icon-minus icon16 action-icon">'+mt.screen.trans.REMOVE+'</span></span>')+'</div></div>';
-    }
+     }
 
     $('#filter_types').hide();
     if (!mt.screen.open_filter_panel) $('#filter-detail').hide();
