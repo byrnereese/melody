@@ -121,6 +121,49 @@ sub list_props {
     };
 }
 
+sub system_filters {
+    return {
+        current_website => {
+            label => 'Pages in This Website',
+            items => [ { type => 'current_context' } ],
+            order => 100,
+            view  => 'website',
+        },
+        published => {
+            label => 'Published Pages',
+            items => [ { type => 'status', args => { value => '2' }, }, ],
+            order => 200,
+        },
+        draft => {
+            label => 'Unpublished Pages',
+            items => [ { type => 'status', args => { value => '1' }, }, ],
+            order => 300,
+        },
+        future => {
+            label => 'Scheduled Pages',
+            items => [ { type => 'status', args => { value => '4' }, }, ],
+            order => 400,
+        },
+        my_posts_on_this_context => {
+            label => 'My Pages',
+            items => sub {
+                [ { type => 'current_user' }, { type => 'current_context' } ]
+                ,;
+            },
+            order => 500,
+        },
+        commented_in_last_7_days => {
+            label => 'Pages with comments in the last 7 days',
+            items => [
+                {   type => 'commented_on',
+                    args => { option => 'days', days => 7 }
+                }
+            ],
+            order => 600,
+        },
+    };
+}
+
 sub class_label {
     return MT->translate("Page");
 }

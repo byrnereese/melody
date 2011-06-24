@@ -561,6 +561,81 @@ sub list_props {
     };
 }
 
+sub system_filters {
+    return {
+        not_spam => {
+            label => 'Non-spam comments',
+            items =>
+                [ { type => 'status', args => { value => 'not_junk' }, }, ],
+            order => 100,
+        },
+        not_spam_in_this_website => {
+            label => 'Non-spam comments on this website',
+            view  => 'website',
+            items => [
+                { type => 'current_context' },
+                { type => 'status', args => { value => 'not_junk' }, },
+            ],
+            order => 200,
+        },
+        pending => {
+            label => 'Pending comments',
+            items =>
+                [ { type => 'status', args => { value => 'pending' }, }, ],
+            order => 300,
+        },
+        published => {
+            label => 'Published comments',
+            items =>
+                [ { type => 'status', args => { value => 'approved' }, }, ],
+            order => 400,
+        },
+        comments_on_my_entry => {
+            label => 'Comments on my entries/pages',
+            items => sub {
+                my $login_user = MT->app->user;
+                [   { type => 'for_current_user' },
+                    { type => 'current_context' }
+                ],
+                    ;
+            },
+            order => 500,
+        },
+        comments_in_last_7_days => {
+            label => 'Comments in the last 7 days',
+            items => [
+                { type => 'status', args => { value => 'not_junk' }, },
+                {   type => 'created_on',
+                    args => { option => 'days', days => 7 }
+                }
+            ],
+            order => 600,
+        },
+        spam => {
+            label => 'Spam comments',
+            items => [ { type => 'status', args => { value => 'junk' }, }, ],
+            order => 700,
+        },
+        _comments_by_entry => {
+            label => sub {
+                my $app   = MT->app;
+                my $id    = $app->param('filter_val');
+                my $entry = MT->model('entry')->load($id);
+                return 'Comments by entry: ' . $entry->title;
+            },
+            items => sub {
+                my $app = MT->app;
+                my $id  = $app->param('filter_val');
+                return [
+                    {   type => 'entry',
+                        args => { option => 'equal', value => $id }
+                    }
+                ];
+            },
+        },
+    };
+}
+
 sub is_not_blocked {
     my ( $eh, $cmt ) = @_;
 
